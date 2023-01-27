@@ -36,7 +36,10 @@ import logging
 from pathlib import Path
 from math import log10
 from mpd import MPDClient, ConnectionError
+
 from camilladsp import CamillaConnection
+
+VERSION = "0.1.0"
 
 class MPDMixerMonitor:
     """ Monitors MPD for mixer changes and callback when so
@@ -131,7 +134,7 @@ class CamillaDSPVolumeUpdater:
 def get_cmdline_arguments():
     parser = argparse.ArgumentParser(description = 'Synchronize MPD volume to CamillaDSP')
 
-    parser.add_argument('-V', '--version', action='version', version='%(prog)s {}'.format('1.0.0'))
+    parser.add_argument('-V', '--version', action='version', version='%(prog)s {}'.format(VERSION))
     parser.add_argument('-v', '--verbose', action='store_true',
                         help = 'Show debug output.')
     parser.add_argument('--mpd_host', default = '127.0.0.1',
