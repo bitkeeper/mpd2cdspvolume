@@ -33,10 +33,10 @@ pip install -r requirements.txt
 
 Copy the scripts to a convient location like:
 ```bash
-sudo cp mpd2cdspvolume.py /usr/bin/mpd2cdspvolume
-sudo chmod a+x /usr/bin/mpd2cdspvolume
-sudo cp cdspstorevolume.sh /usr/bin/cdspstorevolume
-sudo chmod a+x /usr/bin/cdspstorevolume
+sudo cp mpd2cdspvolume.py /usr/local/bin/mpd2cdspvolume
+sudo chmod a+x /usr/local/bin/mpd2cdspvolume
+sudo cp cdspstorevolume.sh /usr/local/bin/cdspstorevolume
+sudo chmod a+x /usr/local/bin/cdspstorevolume
 ```
 
 When alas_cdsp is used prep the volume state file:
@@ -89,7 +89,7 @@ To use the state file with alsa_cdsp edit the config and add the `vol_file` and 
 For example with moOde add following lines to `/etc/alsa/conf.d/camilladsp.conf`:
 ```bash
     vol_file "/var/lib/cdsp/camilladsp_volume_state"
-    camilla_exit_cmd "/usr/bin/cdspstorevolume"
+    camilla_exit_cmd "/usr/local/bin/cdspstorevolume"
 ```
 
 

@@ -4,7 +4,7 @@ After=network-online.target
 
 [Service]
 Type=simple
-ExecStart=/usr/bin/python /usr/bin/mp2cdspvolume --pid_file /var/run/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state
+ExecStart=/usr/bin/python /usr/local/bin/mp2cdspvolume --pid_file /var/run/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state
 
 [Install]
 WantedBy=multi-user.target
