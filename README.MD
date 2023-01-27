@@ -22,7 +22,7 @@ When using the
 # Install
 Checkout the repository from github
 ```
-git clone https://github.com/bitkeeper/mp2cdspvolume.git
+git clone https://github.com/bitkeeper/mpd2cdspvolume.git
 cd mpd2cdspvolume
 ```
 
