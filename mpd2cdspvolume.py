@@ -39,7 +39,7 @@ from mpd import MPDClient, ConnectionError
 
 from camilladsp import CamillaConnection
 
-VERSION = "0.1.0"
+VERSION = "0.1.1"
 
 class MPDMixerMonitor:
     """ Monitors MPD for mixer changes and callback when so
