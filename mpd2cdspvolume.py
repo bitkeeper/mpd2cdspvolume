@@ -67,7 +67,7 @@ class MPDMixerMonitor:
     def _handle_mpd_status(self, status: dict):
         if 'volume' in status:
             volume = float(status['volume'])
-            volume_db = 20*log10(volume/100.0)
+            volume_db = 20*log10(volume/100.0) if volume > 0 else -51.0
             logging.info('vol update = %d : %.2f dB', volume, volume_db)
 
             if self._callback:
