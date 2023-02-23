@@ -165,7 +165,7 @@ if __name__ == "__main__":
     if pid_file:
         logging.info('pid file: "%s"', pid_file )
         try:
-            pid_file.write_text('{}'.format(os.getppid()))
+            pid_file.write_text('{}'.format(os.getpid()))
         except PermissionError as e:
             print(e)
 
