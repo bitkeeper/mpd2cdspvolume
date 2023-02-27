@@ -26,7 +26,7 @@
 
 
 # on SIGHUP mpd2cdspvol will store the current volume of CamillaDSP
-if [ -f '/var/run/mpd2cdspvol.pid' ]
+if [ -f '/var/run/mpd2cdspvol/mpd2cdspvol.pid' ]
 then
   kill -s SIGHUP `cat /var/run/mpd2cdspvol/mpd2cdspvol.pid`
 else
