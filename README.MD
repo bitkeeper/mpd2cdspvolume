@@ -41,9 +41,11 @@ sudo chmod a+x /usr/local/bin/cdspstorevolume
 
 When alas_cdsp is used prep the volume state file:
 ```bash
-sudo mkdir -p /var/lib/cdsp/
-sudo echo "0 0" > /var/lib/cdsp/camilladsp_volume_state
-chmod a+w /var/lib/cdsp/camilladsp_volume_state
+sudo mkdir -p /var/run/mpd2cdspvol
+sudo mkdir -p /var/lib/cdsp
+
+sudo chown -R mpd /var/run/mpd2cdspvol
+sudo chown -R mpd /var/lib/cdsp
 ```
 
 
@@ -70,6 +72,8 @@ optional arguments:
 ```
 
 
+
+
 # alsa_cdsp support
 When also  [alsa_cdsp](https://github.com/scripple/alsa_cdsp) is used, alsa_cdsp start and stop camilladsp on source change like samplerate. Also when music is pauzed camilladsp is stopped. [moOde](https://www.moode.org) is an example that uses alsa_cdsp
 
@@ -92,11 +96,20 @@ For example with moOde add following lines to `/etc/alsa/conf.d/camilladsp.conf`
     camilla_exit_cmd "/usr/local/bin/cdspstorevolume"
 ```
 
-
+To make this work the user of the process who is running should have the rights to send a signal to mpd2cdspvolume.
 
 
 # mpd2cdspvolume as service
 For more convenience mpd2cdspvolume can also be runned as service.
 Example service script is provided. Tune it to your own use.
 
+If you use alsa_cdsp run it as the same user as from the process that runs alsa_cdsp/camilladsp. This allows sending signals without additional configuration.
 
+
+
+# testing as mpd user
+To test if the file rights are correct run the it from the command-line as `mpd` user:
+
+```
+sudo -H -u mpd bash -c "python ./mpd2cdspvolume.py --verbose --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state"
+```
