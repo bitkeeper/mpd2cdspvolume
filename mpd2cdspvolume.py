@@ -39,7 +39,7 @@ from mpd import MPDClient, ConnectionError
 
 from camilladsp import CamillaConnection
 
-VERSION = "0.1.4"
+VERSION = "0.2.0"
 
 class MPDMixerMonitor:
     """ Monitors MPD for mixer changes and callback when so
@@ -106,8 +106,12 @@ class CamillaDSPVolumeUpdater:
     def update_alsa_cdsp_volume_file(self, volume_db: float, mute: int=0):
         if self._volume_state_file and self._volume_state_file.exists():
             logging.info('update volume state file : %.2f dB, mute: %d', volume_db,mute)
-            self._volume_state_file.write_text('{} {}'.format(volume_db, mute))
-
+            try:
+                self._volume_state_file.write_text('{} {}'.format(volume_db, mute))
+            except FileNotFoundError as e:
+                logging.error('Couldn\'t create state file "%s", prob basedir doesn\'t exists.', self._volume_state_file)
+            except PermissionError as e:
+                logging.error('Couldn\'t write state to "%s", prob incorrect owner rights of dir.', self._volume_state_file)
     def update_cdsp_volume(self, volume_db: float):
         try:
             if self._cdsp.is_connected() is False:
@@ -166,10 +170,27 @@ if __name__ == "__main__":
         logging.info('pid file: "%s"', pid_file )
         try:
             pid_file.write_text('{}'.format(os.getpid()))
+        except FileNotFoundError as e:
+            logging.error('Couldn\'t write PID file "%s", prob basedir doesn\'t exists.', pid_file)
+            exit(1)
         except PermissionError as e:
-            print(e)
+            logging.error('Couldn\'t write PID file to "%s", prob incorrect owner rights of dir.', pid_file)
+            exit(1)
 
-    cdsp = CamillaDSPVolumeUpdater(args.volume_state_file, host = args.cdsp_host, port = args.cdsp_port)
+    state_file = args.volume_state_file
+    if state_file and state_file.is_file() is False:
+        logging.info('Create statefile %s',state_file)
+        try:
+            state_file.write_text('0 0')
+        except FileNotFoundError as e:
+            logging.error('Couldn\'t create state file "%s", prob basedir doesn\'t exists.', state_file)
+            exit(1)
+        except PermissionError as e:
+            logging.error('Couldn\'t write state to "%s", prob incorrect owner rights of dir.', state_file)
+            exit(1)
+
+
+    cdsp = CamillaDSPVolumeUpdater(state_file, host = args.cdsp_host, port = args.cdsp_port)
     monitor = MPDMixerMonitor(host = args.mpd_host, port = args.mpd_port, callback = cdsp.update_cdsp_volume)
 
     signal.signal(signal.SIGINT, monitor.exit_gracefully)
