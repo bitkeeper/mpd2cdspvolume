@@ -4,22 +4,50 @@ bitkeeper @ github 2022
 
 # Introduction
 
-MPD2CamillaDSPVolume makes it possible to control the volume of CamillaDSP with the volume of MPD.
+[MPD2CamillaDSPVolume](https://github.com/bitkeeper/mpd2cdspvolume) makes it possible to control the volume of CamillaDSP with the volume of MPD.
 
 Features:
 - Synchronize the volume of [MPD](https://www.musicpd.org/) to [CamillaDSP](https://github.com/HEnquist/camilladsp)
-- When [alsa_cdsp](https://github.com/scripple/alsa_cdsp) is sued, support the use of  volume state file
+- When [alsa_cdsp](https://github.com/scripple/alsa_cdsp) is used, support the use of  volume state file:
+  - When alsa_cdsp stop CamillaDSP the state file is writen
+  - When the volume is changed, while no music is playing, also the state file is writen.
 
 How it works:
 * It listens to MPD Mixer changes.
-* When the volume changes, send a message to CamillaDSP with the volume.
+* When CamillaDSP is running, the changed volume is send to CamillaDSP else to the state file.
 
+Requires:
+* Using for MPD volume control the mixer type `null`
+* Use in the alsa_cdsp config the `camilla_exit_cmd` to make sure the volume is writen on exit.
+```
+camilla_exit_cmd "/usr/local/bin/cdspstorevolume"
+```
+* The camilla_exit_cmd requires that the process of alsa_cdsp can send signals to MPD2CamillaDSPVolume (most easy to run both as the same user)
 
 
 When using MPD with CamillaDSP the volume of MPD isn't coupled to CamillaDSP.
-When using the
 
+# Files
+## From source
+
+| File    |      Description    | Packed  as |
+|----------  |-----------------|---------------|
+| mpd2cdspvolume.py       | mpd volume to camilladsp syncer                           | /usr/local/bin/mpd2cdspvolume |
+| cdspstorevolume.sh      | store the current cdsp volume in to the volume state file | /usr/local/bin/cdspstorevolume.sh |
+| etc/mpd2cdspvolume.conf | tmpfs files to created                                    | /usr/lib/tmpfiles.d/mpd2cdspvolume.conf |
+| etc/mpd2cdspvolume.service | systemd service file                                   | /lib/systemd/system/mpd2cdspvolume.service |
+| etc/postinstall.sh      | runned as part of deb install                             | na |
+
+## Run-time created/used state files
+
+| File    |      Description    |
+|----------  |-----------------|
+| /var/run/mpd2cdspvol/mpd2cdspvol.pid | Contains PID of mpd2cdspvolume. Path is in a temp.fs and is created on boot by `usr/lib/tmpfiles.d/mpd2cdspvolume.conf` |
+| /var/lib/cdsp/camilladsp_volume_state| Contains the volume_state as required by alsa_cdsp. Path is postinstall.sh (typical runned on deb install time)|
 # Install
+
+
+## As source
 Checkout the repository from github
 ```
 git clone https://github.com/bitkeeper/mpd2cdspvolume.git
@@ -37,20 +65,17 @@ sudo cp mpd2cdspvolume.py /usr/local/bin/mpd2cdspvolume
 sudo chmod a+x /usr/local/bin/mpd2cdspvolume
 sudo cp cdspstorevolume.sh /usr/local/bin/cdspstorevolume
 sudo chmod a+x /usr/local/bin/cdspstorevolume
+sudo cp etc/mpd2cdspvolume.conf usr/lib/tmpfiles.d/
 ```
 
 When alas_cdsp is used prep the volume state file:
 ```bash
-sudo mkdir -p /var/run/mpd2cdspvol
 sudo mkdir -p /var/lib/cdsp
-
-sudo chown -R mpd /var/run/mpd2cdspvol
 sudo chown -R mpd /var/lib/cdsp
 ```
 
-
 # Commandline use
-```
+```bash
 usage: mpd2cdspvolume [-h] [-V] [-v] [--mpd_host MPD_HOST] [--mpd_port MPD_PORT] [--cdsp_host CDSP_HOST] [--cdsp_port CDSP_PORT] [-s VOLUME_STATE_FILE] [-p PID_FILE]
 
 Synchronize MPD volume to CamillaDSP
@@ -71,10 +96,14 @@ optional arguments:
                         Write PID of process to this file. (default: None)
 ```
 
+example:
 
+```bash
+sudo -H -u mpd bash -c "/usr/local/bin/mpd2cdspvolume --verbose --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state"
+```
+This will run the program as user `mpd` and with `--verbose` show output of the actions.
 
-
-# alsa_cdsp support
+## alsa_cdsp support
 When also  [alsa_cdsp](https://github.com/scripple/alsa_cdsp) is used, alsa_cdsp start and stop camilladsp on source change like samplerate. Also when music is pauzed camilladsp is stopped. [moOde](https://www.moode.org) is an example that uses alsa_cdsp
 
 To preserve the volume settings of camilladsp alsa_cdsp a way of using a volume state file:
@@ -99,17 +128,19 @@ For example with moOde add following lines to `/etc/alsa/conf.d/camilladsp.conf`
 To make this work the user of the process who is running should have the rights to send a signal to mpd2cdspvolume.
 
 
-# mpd2cdspvolume as service
+## mpd2cdspvolume as service
 For more convenience mpd2cdspvolume can also be runned as service.
 Example service script is provided. Tune it to your own use.
 
 If you use alsa_cdsp run it as the same user as from the process that runs alsa_cdsp/camilladsp. This allows sending signals without additional configuration.
 
 
+# build debian package
+With the script `builddep.sh` you can build a debian package for `mpd2cdspvolume`.
+This requires that you have `fpm` installed.
+And to the system where the package should be installed also the following packages should be present:
+* python3-mpd2
+* python3-camilladsp
 
-# testing as mpd user
-To test if the file rights are correct run the it from the command-line as `mpd` user:
 
-```
-sudo -H -u mpd bash -c "python ./mpd2cdspvolume.py --verbose --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state"
-```
+
