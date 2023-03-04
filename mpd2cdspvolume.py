@@ -33,13 +33,14 @@ import argparse
 import time
 import signal
 import logging
+import time
 from pathlib import Path
 from math import log10
 from mpd import MPDClient, ConnectionError
 
 from camilladsp import CamillaConnection
 
-VERSION = "0.2.1"
+VERSION = "0.2.2"
 
 class MPDMixerMonitor:
     """ Monitors MPD for mixer changes and callback when so
@@ -56,6 +57,8 @@ class MPDMixerMonitor:
 
 
         self._kill_now = False
+
+        self._volume = None                     # last synced volume
         """ Indicates if signal to close app is received"""
 
     def exit_gracefully(self, signum, frame):
@@ -65,25 +68,44 @@ class MPDMixerMonitor:
         self._client.close()
 
     def _handle_mpd_status(self, status: dict):
+        """
+
+        @return False when the volume was the same as the previous one, else True
+        """
+
         if 'volume' in status:
             volume = float(status['volume'])
-            volume_db = 20*log10(volume/100.0) if volume > 0 else -51.0
-            logging.info('vol update = %d : %.2f dB', volume, volume_db)
+            if volume != self._volume:
+                volume_db = 20*log10(volume/100.0) if volume > 0 else -51.0
+                logging.info('vol update = %d : %.2f dB', volume, volume_db)
 
-            if self._callback:
-                self._callback(volume_db)
+                if self._callback:
+                    if self._callback(volume_db) == False and self._volume == 0:
+                        # when unmute fails, give cdsp a little more time to start
+                        time.sleep(0.4)
+                        self._callback(volume_db)
+                self._volume = volume
+            else:
+                return True
+
+        return True
 
     def run_monitor(self):
         while self._kill_now is False:
             try:
                 changed = self._client.idle()
                 if 'mixer' in changed:
-                    self._handle_mpd_status(self._client.status())
+                    status= self._client.status()
+                    # make sure that it is in sync with the latest state of the volume, by repeating untill we get the same volume
+                    while self._handle_mpd_status(status):
+                        status= self._client.status()
+
             except (ConnectionError, ConnectionRefusedError):
                 while self._kill_now is False:
                     try:
                         self._client.connect(self._host, self._port)
                         self._handle_mpd_status(self._client.status())
+                        self._volume = None
                         break
                     except ConnectionRefusedError:
                         logging.info('couldn\'t connect to MPD, retrying')
@@ -118,9 +140,11 @@ class CamillaDSPVolumeUpdater:
                 self._cdsp.connect()
 
             self._cdsp.set_volume(volume_db)
+            return True
         except (ConnectionRefusedError, IOError) as e:
             logging.info('no cdsp')
             self.update_alsa_cdsp_volume_file(volume_db)
+            return False
 
     def store_volume(self):
         try:
