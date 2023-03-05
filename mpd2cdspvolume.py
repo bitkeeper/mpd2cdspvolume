@@ -80,7 +80,7 @@ class MPDMixerMonitor:
                 logging.info('vol update = %d : %.2f dB', volume, volume_db)
 
                 if self._callback:
-                    if self._callback(volume_db) == False and self._volume == 0:
+                    if self._callback(volume_db) == False and (self._volume == 0 or volume == 0):
                         # when unmute fails, give cdsp a little more time to start
                         time.sleep(0.4)
                         self._callback(volume_db)
