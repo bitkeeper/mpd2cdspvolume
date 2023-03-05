@@ -9,10 +9,25 @@
 #########################################################################
 
 
+if [ -z "$PKGNAME" ]
+then
 PKGNAME="mpd2cdspvolume"
+fi
+
+if [ -z "$PKGVERSION" ]
+then
 PKGVERSION="0.2.2"
+fi
+
+if [ -z "$DEBVER" ]
+then
 DEBVER="1"
-DEBLOC="~pre1"
+fi
+
+if [ -z "$DEBLOC" ]
+then
+DEBLOC=""
+fi
 
 #------------------------------------------------------------
 # Prep root to pack
