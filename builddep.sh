@@ -48,7 +48,7 @@ fpm -s dir -t deb -n $PKGNAME -v $PKGVERSION \
 --iteration $DEBVER$DEBLOC \
 -a all \
 --deb-priority optional \
---url https://github.com/moode-player/pkgbuild \
+--url https://github.com/bitkeeper/mpd2cdspvolume \
 -m $DEBEMAIL \
 --license LICENSE \
 --description "Service for synchronizing MPD volume to CamillaDSP." \
