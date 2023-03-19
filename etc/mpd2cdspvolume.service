@@ -5,7 +5,7 @@ After=network-online.target
 [Service]
 Type=simple
 User=mpd
-ExecStart=/usr/local/bin/mpd2cdspvolume --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state
+ExecStart=/usr/local/bin/mpd2cdspvolume --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state --config /etc/mpd2cdspvolume.config
 
 [Install]
 WantedBy=multi-user.target

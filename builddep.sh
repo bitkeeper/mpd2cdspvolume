@@ -16,7 +16,7 @@ fi
 
 if [ -z "$PKGVERSION" ]
 then
-PKGVERSION="0.2.2"
+PKGVERSION="0.3.0"
 fi
 
 if [ -z "$DEBVER" ]
@@ -26,7 +26,7 @@ fi
 
 if [ -z "$DEBLOC" ]
 then
-DEBLOC=""
+DEBLOC="~pre1"
 fi
 
 #------------------------------------------------------------
@@ -36,6 +36,8 @@ cp mpd2cdspvolume.py root/usr/local/bin/mpd2cdspvolume
 cp cdspstorevolume.sh root/usr/local/bin/cdspstorevolume
 mkdir -p root/usr/lib/tmpfiles.d
 cp etc/mpd2cdspvolume.conf root/usr/lib/tmpfiles.d/
+mkdir -p root/etc
+cp etc/mpd2cdspvolume.config root/etc
 
 chmod a+x root/usr/local/bin/mpd2cdspvolume
 chmod a+x root/usr/local/bin/cdspstorevolume
@@ -56,5 +58,6 @@ fpm -s dir -t deb -n $PKGNAME -v $PKGVERSION \
 --depends python3-mpd2 \
 --depends python3-camilladsp \
 --after-install etc/postinstall.sh \
-root/usr/=/usr/.
+root/usr/=/usr/. \
+root/etc/=/etc/.
 

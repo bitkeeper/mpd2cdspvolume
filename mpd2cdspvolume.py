@@ -34,19 +34,39 @@ import time
 import signal
 import logging
 import time
+import configparser
 from pathlib import Path
-from math import log10
+from math import log10, exp, log
 from mpd import MPDClient, ConnectionError
 
 from camilladsp import CamillaConnection
 
-VERSION = "0.2.2"
+VERSION = "0.3.0"
 
+def lin_vol_curve(perc: int, dynamic_range: float= 60.0) -> float:
+    '''
+    Generates from a percentage a dBA, based on a curve with a dynamic_range.
+    Curve calculations coming from: https://www.dr-lex.be/info-stuff/volumecontrols.html
+
+    @perc (int) : linair value between 0-100
+    @dynamic_range (float) : dynamic range of the curve
+    return (float): Value in dBA
+    '''
+    x = perc/100.0
+    y = pow(10, dynamic_range/20)
+    a = 1/y
+    b = log(y)
+    y=a*exp(b*(x))
+    if x < .1:
+        y = x*10*a*exp(0.1*b)
+    if y == 0:
+        y = 0.0000001
+    return 20* log10(y)
 class MPDMixerMonitor:
     """ Monitors MPD for mixer changes and callback when so
         callback receives as argument the volume in dbs.
     """
-    def __init__(self, host: str= "127.0.0.1", port: int = 6600, callback: Callable= None):
+    def __init__(self, host: str= "127.0.0.1", port: int = 6600, callback: Callable= None, dynamic_range: Optional[int] = None, volume_offset : Optional[float]= None):
         self._host = host
         self._port = port
         self._callback = callback
@@ -60,6 +80,12 @@ class MPDMixerMonitor:
 
         self._volume = None                     # last synced volume
         """ Indicates if signal to close app is received"""
+
+        self._dynamic_range: int = dynamic_range if dynamic_range else 30
+        self._volume_offset: float = volume_offset if volume_offset else 0
+
+        logging.info('dynamic_range = %d dB', self._dynamic_range)
+        logging.info('volume_offset = -%d dB', abs(self._volume_offset))
 
     def exit_gracefully(self, signum, frame):
         logging.info('close the shop')
@@ -76,7 +102,9 @@ class MPDMixerMonitor:
         if 'volume' in status:
             volume = float(status['volume'])
             if volume != self._volume:
-                volume_db = 20*log10(volume/100.0) if volume > 0 else -51.0
+                # volume_db = 20*log10(volume/100.0) if volume > 0 else -51.0
+                volume_db = lin_vol_curve(volume, self._dynamic_range) - abs(self._volume_offset)
+
                 logging.info('vol update = %d : %.2f dB', volume, volume_db)
 
                 if self._callback:
@@ -112,8 +140,6 @@ class MPDMixerMonitor:
                         time.sleep(1)
 
         self._client.disconnect()
-
-
 
 class CamillaDSPVolumeUpdater:
     """Updates CamillaDSP volume
@@ -179,9 +205,27 @@ def get_cmdline_arguments():
                    help = 'File where to store the volume state. (default: None)')
     parser.add_argument('-p', '--pid_file', type=Path, default = None,
                    help = 'Write PID of process to this file. (default: None)')
+    parser.add_argument('-c', '--config', type=Path,
+                   help = 'Load config from a file (default: None)')
+
 
     args = parser.parse_args()
     return args
+
+def get_config(config_file: Path):
+    dynamic_range = None
+    volume_offset = None
+
+    if config_file and config_file.is_file():
+        config = configparser.ConfigParser()
+        config.read(config_file)
+
+
+        if 'default' in config and 'dynamic_range' in config['default']:
+            dynamic_range = int(config['default']['dynamic_range'])
+        if 'default' in config and 'volume_offset' in config['default']:
+            volume_offset = float(config['default']['volume_offset'])
+    return dynamic_range, volume_offset
 
 if __name__ == "__main__":
     args = get_cmdline_arguments()
@@ -189,6 +233,19 @@ if __name__ == "__main__":
         logging.basicConfig(level=logging.INFO)
 
     logging.info('start-up mpd2cdspvolume')
+
+    dynamic_range : Optional[int]= None
+    volume_offset : Optional[float]= None
+
+    config_file = args.config
+    if config_file and config_file.is_file() is False:
+        logging.error('Supplied config file "%s" can\'t be read.', config_file)
+        exit(1)
+    elif config_file:
+        logging.info('config file: "%s"', config_file )
+        dynamic_range, volume_offset = get_config(config_file)
+
+
     pid_file=args.pid_file
     if pid_file:
         logging.info('pid file: "%s"', pid_file )
@@ -200,6 +257,7 @@ if __name__ == "__main__":
         except PermissionError as e:
             logging.error('Couldn\'t write PID file to "%s", prob incorrect owner rights of dir.', pid_file)
             exit(1)
+
 
     state_file = args.volume_state_file
     if state_file and state_file.is_file() is False:
@@ -215,7 +273,7 @@ if __name__ == "__main__":
 
 
     cdsp = CamillaDSPVolumeUpdater(state_file, host = args.cdsp_host, port = args.cdsp_port)
-    monitor = MPDMixerMonitor(host = args.mpd_host, port = args.mpd_port, callback = cdsp.update_cdsp_volume)
+    monitor = MPDMixerMonitor(host = args.mpd_host, port = args.mpd_port, callback = cdsp.update_cdsp_volume, dynamic_range=dynamic_range, volume_offset=volume_offset)
 
     signal.signal(signal.SIGINT, monitor.exit_gracefully)
     signal.signal(signal.SIGTERM, monitor.exit_gracefully)

@@ -11,6 +11,8 @@ Features:
 - When [alsa_cdsp](https://github.com/scripple/alsa_cdsp) is used, support the use of  volume state file:
   - When alsa_cdsp stop CamillaDSP the state file is writen
   - When the volume is changed, while no music is playing, also the state file is writen.
+- Dynamic range of volume curve is configuratable.
+- Volume offset is possible to reduce the volume with a constant value.
 
 How it works:
 * It listens to MPD Mixer changes.
@@ -36,7 +38,10 @@ When using MPD with CamillaDSP the volume of MPD isn't coupled to CamillaDSP.
 | cdspstorevolume.sh      | store the current cdsp volume in to the volume state file | /usr/local/bin/cdspstorevolume.sh |
 | etc/mpd2cdspvolume.conf | tmpfs files to created                                    | /usr/lib/tmpfiles.d/mpd2cdspvolume.conf |
 | etc/mpd2cdspvolume.service | systemd service file                                   | /lib/systemd/system/mpd2cdspvolume.service |
+| etc/mpd2cdspvolume.config | mpd2cdspvolume config file*                                  | /etc/mpd2cdspvolume.config
 | etc/postinstall.sh      | runned as part of deb install                             | na |
+
+*) contains dynamic_range and volume_offset
 
 ## Run-time created/used state files
 
@@ -76,7 +81,7 @@ sudo chown -R mpd /var/lib/cdsp
 
 # Commandline use
 ```bash
-usage: mpd2cdspvolume [-h] [-V] [-v] [--mpd_host MPD_HOST] [--mpd_port MPD_PORT] [--cdsp_host CDSP_HOST] [--cdsp_port CDSP_PORT] [-s VOLUME_STATE_FILE] [-p PID_FILE]
+usage: mpd2cdspvolume [-h] [-V] [-v] [--mpd_host MPD_HOST] [--mpd_port MPD_PORT] [--cdsp_host CDSP_HOST] [--cdsp_port CDSP_PORT] [-s VOLUME_STATE_FILE] [-p PID_FILE] [-c CONFIG]
 
 Synchronize MPD volume to CamillaDSP
 
@@ -94,12 +99,14 @@ optional arguments:
                         File where to store the volume state. (default: None)
   -p PID_FILE, --pid_file PID_FILE
                         Write PID of process to this file. (default: None)
+  -c CONFIG, --config CONFIG
+                        Load config from a file (default: None)
 ```
 
 example:
 
 ```bash
-sudo -H -u mpd bash -c "/usr/local/bin/mpd2cdspvolume --verbose --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state"
+sudo -H -u mpd bash -c "/usr/local/bin/mpd2cdspvolume --verbose --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state --config /etc/mpd2cdspvolume.config"
 ```
 This will run the program as user `mpd` and with `--verbose` show output of the actions.
 
