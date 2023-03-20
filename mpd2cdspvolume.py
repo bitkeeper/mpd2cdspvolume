@@ -60,7 +60,7 @@ def lin_vol_curve(perc: int, dynamic_range: float= 60.0) -> float:
     if x < .1:
         y = x*10*a*exp(0.1*b)
     if y == 0:
-        y = 0.0000001
+        y = 0.000001
     return 20* log10(y)
 class MPDMixerMonitor:
     """ Monitors MPD for mixer changes and callback when so
