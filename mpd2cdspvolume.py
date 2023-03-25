@@ -126,7 +126,7 @@ class MPDMixerMonitor:
                     while self._handle_mpd_status(status):
                         status= self._client.status()
 
-            except (ConnectionError, ConnectionRefusedError):
+            except (ConnectionError, ConnectionRefusedError, ConnectionResetError):
                 while self._kill_now is False:
                     try:
                         self._client.connect(self._host, self._port)
