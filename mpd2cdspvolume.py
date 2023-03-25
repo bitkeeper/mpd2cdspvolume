@@ -102,9 +102,7 @@ class MPDMixerMonitor:
         if 'volume' in status:
             volume = float(status['volume'])
             if volume != self._volume:
-                # volume_db = 20*log10(volume/100.0) if volume > 0 else -51.0
                 volume_db = lin_vol_curve(volume, self._dynamic_range) - abs(self._volume_offset)
-
                 logging.info('vol update = %d : %.2f dB', volume, volume_db)
 
                 if self._callback:
@@ -185,6 +183,9 @@ class CamillaDSPVolumeUpdater:
 
     def sig_hup(self, signum, frame):
         self.store_volume()
+        # force disconnect to prevent a 'hanging' socket during close down of cdsp
+        if self._cdsp.is_connected():
+            self._cdsp.disconnect()
 
 def get_cmdline_arguments():
     parser = argparse.ArgumentParser(description = 'Synchronize MPD volume to CamillaDSP')
