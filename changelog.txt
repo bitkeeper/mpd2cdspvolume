@@ -1,5 +1,9 @@
 0.3.0
 * Changed volume curve based on https://www.dr-lex.be/info-stuff/volumecontrols.html
 * Added setting dynamic_range for setting the dynamic range of the volume (default 60dB)
-* Load configuration from a config file (default, /etc/mpd2cdspvolume.confg)
 * Added setting volume_offset, adds a negative gain in addition to the volume (default 0)
+* Load configuration from a config file (default, /etc/mpd2cdspvolume.confg), only dynamic range and voluem offset for now
+* Fixed uncatched MPC exception ConnectionResetError
+* Fixed hanging cdsp socket on shutdown of cdsp by closing cdsp socket on sighup
+
+, ConnectionResetError
