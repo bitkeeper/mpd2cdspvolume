@@ -16,7 +16,7 @@ fi
 
 if [ -z "$PKGVERSION" ]
 then
-PKGVERSION="0.3.0"
+PKGVERSION="0.3.1"
 fi
 
 if [ -z "$DEBVER" ]

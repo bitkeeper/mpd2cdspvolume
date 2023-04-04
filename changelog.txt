@@ -6,4 +6,5 @@
 * Fixed uncatched MPC exception ConnectionResetError
 * Fixed hanging cdsp socket on shutdown of cdsp by closing cdsp socket on sighup
 
-, ConnectionResetError
+0.3.1
+* Fixed bug that caused serious processor load

@@ -41,7 +41,7 @@ from mpd import MPDClient, ConnectionError
 
 from camilladsp import CamillaConnection
 
-VERSION = "0.3.0"
+VERSION = "0.3.1"
 
 def lin_vol_curve(perc: int, dynamic_range: float= 60.0) -> float:
     '''
@@ -112,14 +112,14 @@ class MPDMixerMonitor:
                         self._callback(volume_db)
                 self._volume = volume
             else:
-                return True
+                return False
 
         return True
 
     def run_monitor(self):
         while self._kill_now is False:
             try:
-                changed = self._client.idle()
+                changed = self._client.idle('mixer')
                 if 'mixer' in changed:
                     status= self._client.status()
                     # make sure that it is in sync with the latest state of the volume, by repeating untill we get the same volume
