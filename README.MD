@@ -105,8 +105,14 @@ optional arguments:
 
 example:
 
+with camilladsp 1.x
 ```bash
 sudo -H -u mpd bash -c "/usr/local/bin/mpd2cdspvolume --verbose --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/camilladsp_volume_state --config /etc/mpd2cdspvolume.config"
+```
+
+with camilladsp 2.x
+```bash
+sudo -H -u mpd bash -c "/usr/local/bin/mpd2cdspvolume --verbose --pid_file /var/run/mpd2cdspvol/mpd2cdspvol.pid --volume_state_file /var/lib/cdsp/statefile.yml --config /etc/mpd2cdspvolume.config"
 ```
 This will run the program as user `mpd` and with `--verbose` show output of the actions.
 

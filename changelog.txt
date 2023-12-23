@@ -1,3 +1,9 @@
+0.4.0
+* Support for Camilladsp 2.0
+
+0.3.1
+* Fixed bug that caused serious processor load
+
 0.3.0
 * Changed volume curve based on https://www.dr-lex.be/info-stuff/volumecontrols.html
 * Added setting dynamic_range for setting the dynamic range of the volume (default 60dB)
@@ -6,5 +12,3 @@
 * Fixed uncatched MPC exception ConnectionResetError
 * Fixed hanging cdsp socket on shutdown of cdsp by closing cdsp socket on sighup
 
-0.3.1
-* Fixed bug that caused serious processor load
