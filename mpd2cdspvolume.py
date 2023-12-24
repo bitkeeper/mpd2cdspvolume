@@ -149,7 +149,7 @@ class CamillaDSPVolumeUpdater:
     """
     def __init__(self, volume_state_file: Optional[Path] = None, host: str='127.0.0.1', port:int=1234):
         self._volume_state_file: Optional[Path]= volume_state_file
-        self._cdsp = CamillaConnection(host, port)
+        self._cdsp = CamillaClient(host, port)
         if volume_state_file:
             logging.info('volume state file: "%s"', volume_state_file )
 
