@@ -172,6 +172,14 @@ class CamillaDSPVolumeUpdater:
 
             if hasattr(self._cdsp, "volume"):
                 self._cdsp.volume.set_main(volume_db)
+                time.sleep(0.2)
+                cdsp_actual_volume = self._cdsp.volume.main()
+                logging.info('volume set to %.2f [readback = %.2f] dB', volume_db, cdsp_actual_volume)
+
+                # correct issue when volume is not the required one (issue with cdsp 2.0)
+                if abs(cdsp_actual_volume-volume_db) > .2:
+                    # logging.info('volume incorrect !')
+                    self._cdsp.volume.set_main(volume_db)
             else:
                 self._cdsp.set_volume(volume_db)
             return True
