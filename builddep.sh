@@ -16,7 +16,7 @@ fi
 
 if [ -z "$PKGVERSION" ]
 then
-PKGVERSION="0.3.1"
+PKGVERSION="0.4.0"
 fi
 
 if [ -z "$DEBVER" ]
@@ -26,7 +26,7 @@ fi
 
 if [ -z "$DEBLOC" ]
 then
-DEBLOC="~pre1"
+DEBLOC=""
 fi
 
 #------------------------------------------------------------
