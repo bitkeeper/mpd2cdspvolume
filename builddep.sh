@@ -55,7 +55,7 @@ fpm -s dir -t deb -n $PKGNAME -v $PKGVERSION \
 --license LICENSE \
 --description "Service for synchronizing MPD volume to CamillaDSP." \
 --deb-systemd etc/mpd2cdspvolume.service \
---depends 'python3-mpd2 >= 2.0.0' \
+--depends python3-mpd2 \
 --depends 'python3-camilladsp >= 2.0.0' \
 --after-install etc/postinstall.sh \
 root/usr/=/usr/. \
