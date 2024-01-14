@@ -40,12 +40,9 @@ from pathlib import Path
 from math import log10, exp, log
 from mpd import MPDClient, ConnectionError
 
-try:
-    from camilladsp import CamillaClient
-except:
-    from camilladsp import CamillaConnection as CamillaClient
+import camilladsp
 
-VERSION = "0.4.0"
+VERSION = "1.0.0"
 
 def lin_vol_curve(perc: int, dynamic_range: float= 60.0) -> float:
     '''
@@ -147,92 +144,100 @@ class CamillaDSPVolumeUpdater:
     """Updates CamillaDSP volume
        When cdsp isn't running and a volume state file for alsa_cdsp is provided that one is updated
     """
+
+    CDSP_STATE_TEMPLATE = {
+            'config_path': '/usr/share/camilladsp/working_config.yml',
+            'mute': [ False,False, False,False,False],
+            'volume': [ -6.0, -6.0, -6.0, -6.0, -6.0]
+    }
+    """ Used as default statefile value, when not present or invalid"""
+
     def __init__(self, volume_state_file: Optional[Path] = None, host: str='127.0.0.1', port:int=1234):
         self._volume_state_file: Optional[Path]= volume_state_file
-        self._cdsp = CamillaClient(host, port)
+        self._cdsp = camilladsp.CamillaClient(host, port)
         if volume_state_file:
             logging.info('volume state file: "%s"', volume_state_file )
 
-    def update_alsa_cdsp_volume_file(self, volume_db: float, mute: int=0):
-        """ Store state in own mpd2cdspvolume statefile. Required for CamillaDSP < 2.x"""
-        if self._volume_state_file and self._volume_state_file.exists():
-            logging.info('update volume state file : %.2f dB, mute: %d', volume_db,mute)
-            try:
-                self._volume_state_file.write_text('{} {}'.format(volume_db, mute))
-            except FileNotFoundError as e:
-                logging.error('Couldn\'t create state file "%s", prob basedir doesn\'t exists.', self._volume_state_file)
-            except PermissionError as e:
-                logging.error('Couldn\'t write state to "%s", prob incorrect owner rights of dir.', self._volume_state_file)
+    def check_cdsp_statefile(self) -> bool:
+        """ check if it exists and is valid. If not create a valid one"""
+        try:
+            if self._volume_state_file and self._volume_state_file.is_file() is False:
+                logging.info('Create statefile %s',self._volume_state_file)
+                cdsp.update_cdsp_statefile(0, False)
+            elif self._volume_state_file.is_file() is True:
+                cdsp_state = yaml.load(self._volume_state_file.read_text(), Loader=yaml.Loader)
+                if isinstance(cdsp_state, dict) is False:
+                    logging.info('Statefile %s content not valid recreate it',self._volume_state_file)
+                    cdsp.update_cdsp_statefile(0, False)
+        except FileNotFoundError as e:
+            logging.error('Couldn\'t create state file "%s", prob basedir doesn\'t exists.', self._volume_state_file)
+            return False
+        except PermissionError as e:
+            logging.error('Couldn\'t write state to "%s", prob incorrect owner rights of dir.', self._volume_state_file)
+            return False
+
+        return True
 
     def update_cdsp_volume(self, volume_db: float):
         try:
             if self._cdsp.is_connected() is False:
                 self._cdsp.connect()
 
+            self._cdsp.volume.set_main(volume_db)
+            time.sleep(0.2)
+            cdsp_actual_volume = self._cdsp.volume.main()
+            logging.info('volume set to %.2f [readback = %.2f] dB', volume_db, cdsp_actual_volume)
 
-            if hasattr(self._cdsp, "volume"):
+            # correct issue when volume is not the required one (issue with cdsp 2.0)
+            if abs(cdsp_actual_volume-volume_db) > .2:
+                # logging.info('volume incorrect !')
                 self._cdsp.volume.set_main(volume_db)
-                time.sleep(0.2)
-                cdsp_actual_volume = self._cdsp.volume.main()
-                logging.info('volume set to %.2f [readback = %.2f] dB', volume_db, cdsp_actual_volume)
-
-                # correct issue when volume is not the required one (issue with cdsp 2.0)
-                if abs(cdsp_actual_volume-volume_db) > .2:
-                    # logging.info('volume incorrect !')
-                    self._cdsp.volume.set_main(volume_db)
-            else:
-                self._cdsp.set_volume(volume_db)
             return True
         except (ConnectionRefusedError, IOError) as e:
             logging.info('no cdsp')
-            if hasattr(self._cdsp, "volume"):
-                self.update_alsa_cdsp_volume_file(volume_db)
-            else:
-                self.update_cdsp_statefile(volume_db)
+            self.update_cdsp_statefile(volume_db)
             return False
 
-    def store_volume(self):
-        try:
-            if self._cdsp.is_connected() is False:
-                self._cdsp.connect()
+    # def store_volume(self):
+    #     try:
+    #         if self._cdsp.is_connected() is False:
+    #             self._cdsp.connect()
 
-            if hasattr(self._cdsp, "volume"):
-                volume_db = float(self._cdsp.volume.main())
-                mute = 1 if self._cdsp.mute.main() else 0
-            else:
-                volume_db = float(self._cdsp.get_volume())
-                mute = 1 if self._cdsp.get_mute() else 0
-            self.update_alsa_cdsp_volume_file(volume_db, mute)
+    #         volume_db = float(self._cdsp.volume.main())
+    #         mute = 1 if self._cdsp.mute.main() else 0
+    #         self.update_cdsp_statefile(volume_db, mute)
 
-        except (ConnectionRefusedError, IOError) as e:
-            logging.warning('store volume: no cdsp')
+    #     except (ConnectionRefusedError, IOError) as e:
+    #         logging.warning('store volume: no cdsp')
 
     def sig_hup(self, signum, frame):
-        if hasattr(self._cdsp, "volume") is False:
-            self.store_volume()
+        # not needed anymore cdsp save it's own statefile now
+        #self.store_volume()
         # force disconnect to prevent a 'hanging' socket during close down of cdsp
-        if self._cdsp.is_connected():
-            self._cdsp.disconnect()
+        # if self._cdsp.is_connected():
+        #     self._cdsp.disconnect()
+        logging.warning('sighup for storing current volume isn\'t needed anymore!')
+
 
     def update_cdsp_statefile(self, main_volume: float=-6.0, main_mute:bool = False):
         """ Update statefile from camilladsp. Used for CamillaDSP 2.x and higher."""
         logging.info('update volume state file : %.2f dB, mute: %d', main_volume ,main_mute)
-        cdsp_state = {
-            'config_path': '/usr/share/camilladsp/working_config.yml',
-            'mute': [ False,False, False,False,False],
-            'volume': [ -6.0, -6.0, -6.0, -6.0, -6.0]
-}
+        cdsp_state = dict(CamillaDSPVolumeUpdater.CDSP_STATE_TEMPLATE)
         if self._volume_state_file:
             try:
                 if self._volume_state_file.exists():
-                    cdsp_state = yaml.load(self._volume_state_file.read_text(), Loader=yaml.Loader)
+                    data = yaml.load(self._volume_state_file.read_text(), Loader=yaml.Loader)
+                    if isinstance(data, dict):
+                        cdsp_state = data
+                    else:
+                        logging.warning('no valid state file content, overwrite it')
                 else:
                     logging.info('no state file present, create one')
 
                 cdsp_state['volume'][0] = main_volume
                 cdsp_state['mute'][0] = main_mute
 
-                self._volume_state_file.write_text(yaml.dump(data, indent=8, explicit_start=True))
+                self._volume_state_file.write_text(yaml.dump(cdsp_state, indent=8, explicit_start=True))
             except FileNotFoundError as e:
                 logging.error('Couldn\'t create state file "%s", prob basedir doesn\'t exists.', self._volume_state_file)
             except PermissionError as e:
@@ -285,6 +290,10 @@ if __name__ == "__main__":
     if args.verbose:
         logging.basicConfig(level=logging.INFO)
 
+    if not hasattr(camilladsp, 'CamillaClient'):
+            logging.error('No or wrong version of Python package camilladsp installed, requires version 2 or higher.')
+            exit(1)
+
     logging.info('start-up mpd2cdspvolume')
 
     dynamic_range : Optional[int]= None
@@ -313,19 +322,9 @@ if __name__ == "__main__":
 
 
     state_file = args.volume_state_file
-    if state_file and state_file.is_file() is False:
-        logging.info('Create statefile %s',state_file)
-        try:
-            state_file.write_text('0 0')
-        except FileNotFoundError as e:
-            logging.error('Couldn\'t create state file "%s", prob basedir doesn\'t exists.', state_file)
-            exit(1)
-        except PermissionError as e:
-            logging.error('Couldn\'t write state to "%s", prob incorrect owner rights of dir.', state_file)
-            exit(1)
-
-
     cdsp = CamillaDSPVolumeUpdater(state_file, host = args.cdsp_host, port = args.cdsp_port)
+    if cdsp.check_cdsp_statefile() is False:
+        exit(1)
     monitor = MPDMixerMonitor(host = args.mpd_host, port = args.mpd_port, callback = cdsp.update_cdsp_volume, dynamic_range=dynamic_range, volume_offset=volume_offset)
 
     signal.signal(signal.SIGINT, monitor.exit_gracefully)
