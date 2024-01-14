@@ -16,7 +16,7 @@ fi
 
 if [ -z "$PKGVERSION" ]
 then
-PKGVERSION="0.4.0"
+PKGVERSION="1.0.0"
 fi
 
 if [ -z "$DEBVER" ]
@@ -55,8 +55,8 @@ fpm -s dir -t deb -n $PKGNAME -v $PKGVERSION \
 --license LICENSE \
 --description "Service for synchronizing MPD volume to CamillaDSP." \
 --deb-systemd etc/mpd2cdspvolume.service \
---depends python3-mpd2 \
---depends python3-camilladsp \
+--depends 'python3-mpd2 >= 2.0.0' \
+--depends 'python3-camilladsp >= 2.0.0' \
 --after-install etc/postinstall.sh \
 root/usr/=/usr/. \
 root/etc/=/etc/.
