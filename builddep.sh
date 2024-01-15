@@ -33,14 +33,12 @@ fi
 # Prep root to pack
 mkdir -p root/usr/local/bin
 cp mpd2cdspvolume.py root/usr/local/bin/mpd2cdspvolume
-cp cdspstorevolume.sh root/usr/local/bin/cdspstorevolume
 mkdir -p root/usr/lib/tmpfiles.d
 cp etc/mpd2cdspvolume.conf root/usr/lib/tmpfiles.d/
 mkdir -p root/etc
 cp etc/mpd2cdspvolume.config root/etc
 
 chmod a+x root/usr/local/bin/mpd2cdspvolume
-chmod a+x root/usr/local/bin/cdspstorevolume
 
 # build the package
 fpm -s dir -t deb -n $PKGNAME -v $PKGVERSION \

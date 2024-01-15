@@ -198,27 +198,6 @@ class CamillaDSPVolumeUpdater:
             self.update_cdsp_statefile(volume_db)
             return False
 
-    # def store_volume(self):
-    #     try:
-    #         if self._cdsp.is_connected() is False:
-    #             self._cdsp.connect()
-
-    #         volume_db = float(self._cdsp.volume.main())
-    #         mute = 1 if self._cdsp.mute.main() else 0
-    #         self.update_cdsp_statefile(volume_db, mute)
-
-    #     except (ConnectionRefusedError, IOError) as e:
-    #         logging.warning('store volume: no cdsp')
-
-    def sig_hup(self, signum, frame):
-        # not needed anymore cdsp save it's own statefile now
-        #self.store_volume()
-        # force disconnect to prevent a 'hanging' socket during close down of cdsp
-        # if self._cdsp.is_connected():
-        #     self._cdsp.disconnect()
-        logging.warning('sighup for storing current volume isn\'t needed anymore!')
-
-
     def update_cdsp_statefile(self, main_volume: float=-6.0, main_mute:bool = False):
         """ Update statefile from camilladsp. Used for CamillaDSP 2.x and higher."""
         logging.info('update volume state file : %.2f dB, mute: %d', main_volume ,main_mute)
@@ -329,7 +308,6 @@ if __name__ == "__main__":
 
     signal.signal(signal.SIGINT, monitor.exit_gracefully)
     signal.signal(signal.SIGTERM, monitor.exit_gracefully)
-    signal.signal(signal.SIGHUP, cdsp.sig_hup)
 
     monitor.run_monitor()
 
