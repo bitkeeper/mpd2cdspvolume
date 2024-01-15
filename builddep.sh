@@ -16,7 +16,7 @@ fi
 
 if [ -z "$PKGVERSION" ]
 then
-PKGVERSION="0.4.0"
+PKGVERSION="1.0.0"
 fi
 
 if [ -z "$DEBVER" ]
@@ -33,14 +33,12 @@ fi
 # Prep root to pack
 mkdir -p root/usr/local/bin
 cp mpd2cdspvolume.py root/usr/local/bin/mpd2cdspvolume
-cp cdspstorevolume.sh root/usr/local/bin/cdspstorevolume
 mkdir -p root/usr/lib/tmpfiles.d
 cp etc/mpd2cdspvolume.conf root/usr/lib/tmpfiles.d/
 mkdir -p root/etc
 cp etc/mpd2cdspvolume.config root/etc
 
 chmod a+x root/usr/local/bin/mpd2cdspvolume
-chmod a+x root/usr/local/bin/cdspstorevolume
 
 # build the package
 fpm -s dir -t deb -n $PKGNAME -v $PKGVERSION \
@@ -56,7 +54,7 @@ fpm -s dir -t deb -n $PKGNAME -v $PKGVERSION \
 --description "Service for synchronizing MPD volume to CamillaDSP." \
 --deb-systemd etc/mpd2cdspvolume.service \
 --depends python3-mpd2 \
---depends python3-camilladsp \
+--depends 'python3-camilladsp >= 2.0.0' \
 --after-install etc/postinstall.sh \
 root/usr/=/usr/. \
 root/etc/=/etc/.

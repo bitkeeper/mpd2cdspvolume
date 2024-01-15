@@ -1,3 +1,10 @@
+1.0.0
+* [refactor!] Drop support Camilladsp 1.x
+* [fix] Correct initial statefile generation
+* [feat] Create correct statefile if format is not valid
+* [feat] Detect if correct camilladsp python pacakge is installed
+* [refactor] Don't store volume on sighup (not required any more with CamillaDSP)
+
 0.4.0
 * Support for Camilladsp 2.0
 
