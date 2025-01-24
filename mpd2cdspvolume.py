@@ -42,7 +42,7 @@ from mpd import MPDClient, ConnectionError
 
 import camilladsp
 
-VERSION = "1.0.0"
+VERSION = "2.0.0"
 
 def lin_vol_curve(perc: int, dynamic_range: float= 60.0) -> float:
     '''
@@ -183,15 +183,15 @@ class CamillaDSPVolumeUpdater:
             if self._cdsp.is_connected() is False:
                 self._cdsp.connect()
 
-            self._cdsp.volume.set_main(volume_db)
+            self._cdsp.volume.set_main_volume(volume_db)
             time.sleep(0.2)
-            cdsp_actual_volume = self._cdsp.volume.main()
+            cdsp_actual_volume = self._cdsp.volume.main_volume()
             logging.info('volume set to %.2f [readback = %.2f] dB', volume_db, cdsp_actual_volume)
 
             # correct issue when volume is not the required one (issue with cdsp 2.0)
             if abs(cdsp_actual_volume-volume_db) > .2:
                 # logging.info('volume incorrect !')
-                self._cdsp.volume.set_main(volume_db)
+                self._cdsp.volume.set_main_volume(volume_db)
             return True
         except (ConnectionRefusedError, IOError) as e:
             logging.info('no cdsp')
